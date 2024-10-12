@@ -442,10 +442,18 @@ fn parse_object(source: String, classes: Scope) -> Type {
 
         for token in tokens {
             if token.len() == 2 {
-                methods.insert(
-                    token[0].trim().to_string().clone(),
-                    Function::UserDefined(token[1].clone()),
-                );
+                methods.insert(token[0].trim().to_string().clone(), {
+                    let tokens = tokenize_expr(token[1].clone());
+                    Function::UserDefined(
+                        {
+                            let mut temp = tokens[0].clone();
+                            temp.remove(temp.find("(").unwrap());
+                            temp.remove(temp.rfind(")").unwrap());
+                            tokenize_expr(temp)
+                        },
+                        token[1].clone(),
+                    )
+                });
             } else {
                 properties.insert(token[0].trim().to_string().clone());
             }
@@ -641,10 +649,10 @@ impl Type {
 #[derive(Clone, Debug)]
 enum Function {
     BuiltIn(fn(Args, Scope) -> Object),
-    UserDefined(String),
+    UserDefined(Vec<String>, String),
 }
 impl Function {
-    fn call(&self, args: Args, properties: Scope) -> Object {
+    fn call(&self, args: Args, mut properties: Scope) -> Object {
         let args = {
             let mut new = vec![];
             for i in args {
@@ -659,7 +667,11 @@ impl Function {
 
         if let Function::BuiltIn(func) = self {
             func(args, properties)
-        } else if let Function::UserDefined(code) = self {
+        } else if let Function::UserDefined(params, code) = self {
+            for (param, arg) in params.iter().zip(args) {
+                properties.insert(param.to_string(), arg);
+            }
+
             let mut code = code.replacen("{", "", 1);
             code.remove(code.rfind("}").unwrap());
             run_program(code.to_string(), &mut properties.clone()).get_object()

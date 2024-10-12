@@ -361,6 +361,26 @@ fn parse_object(source: String, classes: Scope) -> Type {
                 result
             },
         })
+    } else if source.contains("class{") && source.ends_with("}") {
+        source.remove(source.rfind("}").unwrap());
+        source = source.replacen("class{", "", 0);
+
+        let tokens = tokenize_program(source);
+        let mut properties = HashSet::new();
+        let mut methods = HashMap::new();
+
+        for token in tokens {
+            if token.len() == 2 {
+                methods.insert(token[0].clone(), Function::UserDefined(token[1].clone()));
+            } else {
+                properties.insert(token[1].clone());
+            }
+        }
+
+        Type::Class(Class {
+            properties,
+            methods,
+        })
     } else {
         Type::Variable(source)
     }

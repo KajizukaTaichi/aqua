@@ -414,10 +414,10 @@ fn run_program(source: String, scope: &mut Scope) -> Type {
             if define.len() == 2 {
                 // Setting property of the object
                 let mut object = scope.get(define[0]).unwrap().get_object();
-                object.properties.insert(
-                    define[1].to_string(),
-                    parse_expr(lines[1].clone(), scope).eval(scope),
-                );
+                result = parse_expr(lines[1].clone(), scope).eval(scope);
+                object
+                    .properties
+                    .insert(define[1].to_string(), result.clone());
                 scope.insert(define[0].to_string(), Type::Object(object));
             } else if define.len() == 1 {
                 // Define variable

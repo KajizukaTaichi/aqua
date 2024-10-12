@@ -208,7 +208,7 @@ fn main() {
         new
     };
 
-    let code = "x = 1; y = x + 2; 1 + y";
+    let code = "apple = class{size;}";
     dbg!(run_program(code.to_string(), &mut scope.clone())
         .get_object()
         .display(scope));
@@ -353,8 +353,8 @@ fn parse_object(source: String, classes: Scope) -> Type {
                 for token in tokens {
                     if token.len() == 2 {
                         result.insert(
-                            token[0].clone(),
-                            parse_expr(token[1].clone(), classes.clone()),
+                            token[0].trim().to_string().clone(),
+                            parse_expr(token[1].trim().to_string().clone(), classes.clone()),
                         );
                     }
                 }
@@ -371,9 +371,12 @@ fn parse_object(source: String, classes: Scope) -> Type {
 
         for token in tokens {
             if token.len() == 2 {
-                methods.insert(token[0].clone(), Function::UserDefined(token[1].clone()));
+                methods.insert(
+                    token[0].trim().to_string().clone(),
+                    Function::UserDefined(token[1].clone()),
+                );
             } else {
-                properties.insert(token[1].clone());
+                properties.insert(token[1].trim().to_string().clone());
             }
         }
 

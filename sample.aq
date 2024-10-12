@@ -1,16 +1,23 @@
-apple = class{
-    weight; color;
+player = class{
+    name; hp; level;
 
-    get-weight = method() {
-        weight
+    get-name = method() { name };
+    get-hp = method() { hp };
+    get-level = method() { level };
+
+    level-up = method(plus) {
+        self level = level + 1
     };
 
     __display__ = method() {
-        color + " apple"
+        hp = "HP" + (hp to-string);
+        level = "Level" + (level to-string);
+        name + (" " + (hp + (" " + level)))
     }
 };
 
 
-akita-gold = apple{ size = 300; color = "gold" };
-console writeln ringo;
-console writeln (ringo get-size);
+you = player{ name = "Mario"; hp = 80; level = 1 };
+console writeln you;
+you = you level-up;
+console writeln you

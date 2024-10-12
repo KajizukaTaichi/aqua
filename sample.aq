@@ -13,11 +13,11 @@ player = class{
 };
 
 
-mario = player{ name = "Mario"; hp = 80; level = 3 };
-luigi = player{ name = "Luigi"; hp = 50; level = 1 };
+alice = player{ name = "Alice"; hp = 80; level = 3 };
+bob = player{ name = "Bob"; hp = 50; level = 1 };
 
-console writeln mario; console writeln luigi;
+console writeln alice; console writeln bob;
 
 console write "HP different: ";
-value = ((mario get-hp) - (luigi get-hp));
+value = ((alice get-hp) - (bob get-hp));
 console writeln value

@@ -8,7 +8,7 @@ fn main() {
         apple = class{
             size;
             get-size = {size};
-            __display__ = { "Ta-da! this is apple" }
+            __display__ = { "Ta-da! this is an apple" }
         };
         a = apple{ size = (2 + 3) };
         console writeln a;

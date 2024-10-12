@@ -1,0 +1,12 @@
+apple = class{
+    size; color;
+
+    get-size = method() { size };
+    __display__ = method() { color + " apple" }
+};
+
+
+a = apple{ size = (2 + 3); color = "red" };
+
+console writeln a;
+console writeln (a get-size)

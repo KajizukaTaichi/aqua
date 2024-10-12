@@ -19,4 +19,5 @@ luigi = player{ name = "Luigi"; hp = 50; level = 1 };
 console writeln mario; console writeln luigi;
 
 console write "HP different: ";
-console writeln ((mario get-hp) - (luigi get-hp))
+value = ((mario get-hp) - (luigi get-hp));
+console writeln value

@@ -4,7 +4,7 @@ fn main() {
     println!("Aqua 0.1");
     let mut scope = builtin_classes();
 
-    let code = r#"apple = class{ size; get-size = {size}; __display__ = { "Ta-da! this is apple" } }; a = apple{ size = (2 + 3) }; a"#;
+    let code = r#"apple = class{ size; get-size = {size}; __display__ = { "Ta-da! this is apple" } }; a = apple{ size = (2 + 3) }; console writeln a; a get-size"#;
     println!(
         "{}",
         run_program(code.to_string(), &mut scope)
@@ -15,6 +15,72 @@ fn main() {
 
 fn builtin_classes() -> Scope {
     let classes = HashMap::from([
+        (
+            "console".to_string(),
+            (Class {
+                properties: HashSet::new(),
+                methods: HashMap::from([
+                    (
+                        "writeln".to_string(),
+                        Function::BuiltIn(|args, scope| {
+                            let text = args[0].get_object().display(scope.clone());
+                            println!("{text}");
+
+                            let class = scope.get("null").unwrap();
+                            Object {
+                                class: class.to_owned().get_class(),
+                                properties: HashMap::new(),
+                            }
+                        }),
+                    ),
+                    (
+                        "__display__".to_string(),
+                        Function::BuiltIn(|_, scope| {
+                            let left = scope
+                                .get("self")
+                                .unwrap()
+                                .get_object()
+                                .properties
+                                .get("raw")
+                                .unwrap()
+                                .get_data();
+                            let class = scope.get("string").unwrap();
+                            Object {
+                                class: class.to_owned().get_class(),
+                                properties: HashMap::from([(
+                                    "raw".to_string(),
+                                    Type::Data(
+                                        f64::from_le_bytes(left.try_into().unwrap())
+                                            .to_string()
+                                            .as_bytes()
+                                            .to_vec(),
+                                    ),
+                                )]),
+                            }
+                        }),
+                    ),
+                ]),
+            }),
+        ),
+        (
+            "null".to_string(),
+            (Class {
+                properties: HashSet::new(),
+                methods: HashMap::from([(
+                    "__display__".to_string(),
+                    Function::BuiltIn(|_, scope| {
+                        let class = scope.get("string").unwrap();
+                        Object {
+                            class: class.to_owned().get_class(),
+                            properties: HashMap::from([(
+                                "raw".to_string(),
+                                Type::Data("null".as_bytes().to_vec()),
+                            )]),
+                        }
+                    }),
+                )]),
+            }),
+        ),
         (
             "number".to_string(),
             (Class {
@@ -331,6 +397,18 @@ fn parse_object(source: String, classes: Scope) -> Type {
         Type::Object(Object {
             class: class.to_owned().get_class(),
             properties: HashMap::from([("raw".to_string(), Type::Data(n.to_le_bytes().to_vec()))]),
+        })
+    } else if source == "null" {
+        let class = classes.get("null").unwrap();
+        Type::Object(Object {
+            class: class.to_owned().get_class(),
+            properties: HashMap::new(),
+        })
+    } else if source == "console" {
+        let class = classes.get("console").unwrap();
+        Type::Object(Object {
+            class: class.to_owned().get_class(),
+            properties: HashMap::new(),
         })
     } else if source.starts_with("(") && source.ends_with(")") {
         source.remove(source.find("(").unwrap());

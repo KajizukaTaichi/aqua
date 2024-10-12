@@ -5,14 +5,14 @@ fn main() {
     let mut scope = builtin_classes();
 
     let code = r#"
-        apple = class{
-            size;
-            get-size = {size};
-            __display__ = { "Ta-da! this is an apple" }
-        };
-        a = apple{ size = (2 + 3) };
-        console writeln a;
-        console writeln (a get-size)
+apple = class{
+    size;
+    get-size = {size};
+    __display__ = { "Ta-da! this is an apple" }
+};
+a = apple{ size = (2 + 3) };
+console writeln a;
+console writeln (a get-size)
     "#;
 
     run_program(code.to_string(), &mut scope)

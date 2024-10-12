@@ -2,6 +2,18 @@ use std::collections::{HashMap, HashSet};
 
 fn main() {
     println!("Aqua 0.1");
+    let mut scope = builtin_classes();
+
+    let code = r#"apple = class{ size; get-size = {size}; __display__ = { "Ta-da! this is apple" } }; a = apple{ size = (2 + 3) }; a"#;
+    println!(
+        "{}",
+        run_program(code.to_string(), &mut scope)
+            .get_object()
+            .display(scope)
+    );
+}
+
+fn builtin_classes() -> Scope {
     let classes = HashMap::from([
         (
             "number".to_string(),
@@ -200,18 +212,12 @@ fn main() {
             }),
         ),
     ]);
-    let scope = {
-        let mut new = HashMap::new();
-        for (k, v) in classes {
-            new.insert(k, Type::Class(v));
-        }
-        new
-    };
 
-    let code = r#"apple = class{ size; get-size = {size}; __display__ = { "Ta-da! this is apple" } }; a = apple{ size = (2 + 3) }; a"#;
-    dbg!(run_program(code.to_string(), &mut scope.clone())
-        .get_object()
-        .display(scope));
+    let mut new = HashMap::new();
+    for (k, v) in classes {
+        new.insert(k, Type::Class(v));
+    }
+    new
 }
 
 fn run_program(source: String, scope: &mut Scope) -> Type {
@@ -220,7 +226,6 @@ fn run_program(source: String, scope: &mut Scope) -> Type {
 
     // Execute each line
     for lines in source {
-        dbg!(&scope);
         if lines.len() == 2 {
             // Define variable
             result = Some(parse_expr(lines[1].clone(), scope.clone()).eval(scope.clone()));
@@ -229,7 +234,6 @@ fn run_program(source: String, scope: &mut Scope) -> Type {
             // Evaluate the expression
             result = Some(parse_expr(lines[0].to_string(), scope.clone()).eval(scope.clone()));
         }
-        dbg!(&scope);
     }
     result.unwrap()
 }
@@ -361,8 +365,6 @@ fn parse_object(source: String, classes: Scope) -> Type {
                 properties.insert(token[0].trim().to_string().clone());
             }
         }
-
-        dbg!(&properties, &methods);
 
         Type::Class(Class {
             properties,

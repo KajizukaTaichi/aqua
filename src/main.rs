@@ -7,8 +7,8 @@ fn main() {
     let code = r#"
 apple = class{
     size;
-    get-size = {size};
-    __display__ = { "Ta-da! this is an apple" }
+    get-size = () {size};
+    __display__ = () { "Ta-da! this is an apple" }
 };
 a = apple{ size = (2 + 3) };
 console writeln a;
@@ -451,7 +451,7 @@ fn parse_object(source: String, classes: Scope) -> Type {
                             temp.remove(temp.rfind(")").unwrap());
                             tokenize_expr(temp)
                         },
-                        token[1].clone(),
+                        tokens[1].clone(),
                     )
                 });
             } else {

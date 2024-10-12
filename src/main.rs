@@ -7,20 +7,20 @@ fn main() {
     let code = r#"
 apple = class{
     size;
-    set-size = (number) { number = number };
+    set-size = (number) { size = number };
     get-size = () { size };
     __display__ = () { "Ta-da! this is an apple" }
 };
 a = apple{ size = (2 + 3) };
 console writeln a;
 console writeln (a get-size);
-a set-size 10;
+a set-size 1;
 console writeln (a get-size)
     "#;
 
     run_program(code.to_string(), &mut scope)
         .get_object()
-        .display(scope);
+        .display(&mut scope);
 }
 
 fn builtin_classes() -> Scope {
@@ -33,7 +33,7 @@ fn builtin_classes() -> Scope {
                     (
                         "writeln".to_string(),
                         Function::BuiltIn(|args, scope| {
-                            let text = args[0].get_object().display(scope.clone());
+                            let text = args[0].get_object().display(scope);
                             println!("{text}");
 
                             let class = scope.get("null").unwrap();
@@ -298,17 +298,17 @@ fn builtin_classes() -> Scope {
 
 fn run_program(source: String, scope: &mut Scope) -> Type {
     let source = tokenize_program(source);
-    let mut result = parse_object("null".to_string(), scope.clone());
+    let mut result = parse_object("null".to_string(), scope);
 
     // Execute each line
     for lines in source {
         if lines.len() == 2 {
             // Define variable
-            result = parse_expr(lines[1].clone(), scope.clone()).eval(scope.clone());
+            result = parse_expr(lines[1].clone(), scope).eval(scope);
             scope.insert(lines[0].trim().to_string(), result.clone());
         } else {
             // Evaluate the expression
-            result = parse_expr(lines[0].to_string(), scope.clone()).eval(scope.clone());
+            result = parse_expr(lines[0].to_string(), scope).eval(scope);
         }
     }
     result
@@ -400,7 +400,7 @@ fn tokenize_program(input: String) -> Vec<Vec<String>> {
     tokens
 }
 
-fn parse_object(source: String, classes: Scope) -> Type {
+fn parse_object(source: String, classes: &mut Scope) -> Type {
     let mut source = source.trim().to_string();
     if let Ok(n) = source.parse::<f64>() {
         let class = classes.get("number").unwrap();
@@ -479,8 +479,7 @@ fn parse_object(source: String, classes: Scope) -> Type {
                     if token.len() == 2 {
                         result.insert(
                             token[0].trim().to_string().clone(),
-                            parse_expr(token[1].trim().to_string().clone(), classes.clone())
-                                .eval(classes.clone()),
+                            parse_expr(token[1].trim().to_string().clone(), classes).eval(classes),
                         );
                     }
                 }
@@ -492,19 +491,19 @@ fn parse_object(source: String, classes: Scope) -> Type {
     }
 }
 
-fn parse_expr(source: String, classes: Scope) -> Type {
+fn parse_expr(source: String, classes: &mut Scope) -> Type {
     let tokens = tokenize_expr(source);
     if tokens.len() == 1 {
         parse_object(tokens[0].clone(), classes)
     } else {
         Type::Expr(Expr {
-            object: Box::new(parse_object(tokens[0].clone(), classes.clone())),
+            object: Box::new(parse_object(tokens[0].clone(), classes)),
             methods: tokens[1].clone(),
             args: tokens
                 .get(2..)
                 .unwrap_or_default()
                 .iter()
-                .map(|s| parse_object(s.clone(), classes.clone()))
+                .map(|s| parse_object(s.clone(), classes))
                 .collect(),
         })
     }
@@ -582,12 +581,12 @@ struct Object {
     properties: Scope,
 }
 impl Object {
-    fn call_method(&mut self, name: String, args: Args, mut scope: Scope) -> Object {
+    fn call_method(&mut self, name: String, args: Args, scope: &mut Scope) -> Object {
         scope.insert("self".to_string(), Type::Object(self.clone()));
         scope.extend(self.properties.clone());
 
         let method = self.class.methods.get(&name).unwrap();
-        let result = method.call(args, scope.clone());
+        let result = method.call(args, scope);
 
         *self = scope.get("self").unwrap().get_object();
         for i in &self.class.properties {
@@ -598,7 +597,7 @@ impl Object {
         result
     }
 
-    fn display(&mut self, scope: Scope) -> String {
+    fn display(&mut self, scope: &mut Scope) -> String {
         String::from_utf8(
             self.call_method("__display__".to_string(), vec![], scope)
                 .properties
@@ -640,7 +639,7 @@ impl Type {
         }
     }
 
-    fn eval(&self, scope: Scope) -> Type {
+    fn eval(&self, scope: &mut Scope) -> Type {
         match self {
             Type::Expr(expr) => Type::Object(expr.eval(scope)),
             Type::Variable(variable) => scope.get(variable).unwrap().to_owned(),
@@ -651,11 +650,11 @@ impl Type {
 
 #[derive(Clone, Debug)]
 enum Function {
-    BuiltIn(fn(Args, Scope) -> Object),
+    BuiltIn(fn(Args, &mut Scope) -> Object),
     UserDefined(Vec<String>, String),
 }
 impl Function {
-    fn call(&self, args: Args, mut properties: Scope) -> Object {
+    fn call(&self, args: Args, properties: &mut Scope) -> Object {
         if let Function::BuiltIn(func) = self {
             func(args, properties)
         } else if let Function::UserDefined(params, code) = self {
@@ -665,7 +664,8 @@ impl Function {
 
             let mut code = code.replacen("{", "", 1);
             code.remove(code.rfind("}").unwrap());
-            run_program(code.to_string(), &mut properties.clone()).get_object()
+            dbg!(&code);
+            run_program(code.to_string(), properties).get_object()
         } else {
             todo!()
         }
@@ -679,12 +679,12 @@ struct Expr {
     args: Args,
 }
 impl Expr {
-    fn eval(&self, scope: Scope) -> Object {
+    fn eval(&self, scope: &mut Scope) -> Object {
         let args = {
             let mut new = vec![];
             for i in self.args.clone() {
                 if let Type::Expr(expr) = i {
-                    new.push(Type::Object(expr.eval(scope.clone())));
+                    new.push(Type::Object(expr.eval(scope)));
                 } else if let Type::Variable(v) = i {
                     new.push(scope.get(&v).unwrap().to_owned());
                 } else {
@@ -694,10 +694,9 @@ impl Expr {
             new
         };
 
-        (*self.object).eval(scope.clone()).get_object().call_method(
-            self.methods.clone(),
-            args,
-            scope,
-        )
+        (*self.object)
+            .eval(scope)
+            .get_object()
+            .call_method(self.methods.clone(), args, scope)
     }
 }

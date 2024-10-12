@@ -78,27 +78,45 @@ fn builtin_classes() -> Scope {
                         }),
                     ),
                     (
-                        "__display__".to_string(),
-                        Function::BuiltIn(|_, scope| {
-                            let left = scope
-                                .get("self")
+                        "write".to_string(),
+                        Function::BuiltIn(|args, scope| {
+                            let text = args[0].get_object().display(scope);
+                            print!("{text}");
+
+                            let class = scope.get("null").unwrap();
+                            Object {
+                                class: class.to_owned().get_class(),
+                                properties: HashMap::new(),
+                            }
+                        }),
+                    ),
+                    (
+                        "read".to_string(),
+                        Function::BuiltIn(|args, scope| {
+                            let text = DefaultEditor::new()
                                 .unwrap()
-                                .get_object()
-                                .properties
-                                .get("raw")
-                                .unwrap()
-                                .get_data();
+                                .readline(&args[0].get_object().display(scope))
+                                .unwrap_or_default();
+
                             let class = scope.get("string").unwrap();
                             Object {
                                 class: class.to_owned().get_class(),
                                 properties: HashMap::from([(
                                     "raw".to_string(),
-                                    Type::Data(
-                                        f64::from_le_bytes(left.try_into().unwrap())
-                                            .to_string()
-                                            .as_bytes()
-                                            .to_vec(),
-                                    ),
+                                    Type::Data(text.to_string().as_bytes().to_vec()),
+                                )]),
+                            }
+                        }),
+                    ),
+                    (
+                        "__display__".to_string(),
+                        Function::BuiltIn(|_, scope| {
+                            let class = scope.get("string").unwrap();
+                            Object {
+                                class: class.to_owned().get_class(),
+                                properties: HashMap::from([(
+                                    "raw".to_string(),
+                                    Type::Data("console".to_string().as_bytes().to_vec()),
                                 )]),
                             }
                         }),

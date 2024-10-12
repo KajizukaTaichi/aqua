@@ -1,12 +1,20 @@
 apple = class{
     size; color;
 
-    get-size = method() { size };
-    __display__ = method() { color + " apple" }
+    get-size = method() {
+        size
+    };
+
+    __display__ = method() {
+        color + " apple"
+    }
 };
 
 
-a = apple{ size = (2 + 3); color = "red" };
+ringo = apple{ size = 5; color = "red" };
+console writeln ringo;
+console writeln (ringo get-size);
 
-console writeln a;
-console writeln (a get-size)
+nashi = apple{ size = ((ringo get-size) - 2); color = "green" };
+console writeln nashi;
+console writeln (nashi get-size)

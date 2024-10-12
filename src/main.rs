@@ -276,6 +276,32 @@ fn builtin_classes() -> Scope {
                             }
                         }),
                     ),
+                    (
+                        "to-string".to_string(),
+                        Function::BuiltIn(|_, scope| {
+                            let left = scope
+                                .get("self")
+                                .unwrap()
+                                .get_object()
+                                .properties
+                                .get("raw")
+                                .unwrap()
+                                .get_data();
+                            let class = scope.get("string").unwrap();
+                            Object {
+                                class: class.to_owned().get_class(),
+                                properties: HashMap::from([(
+                                    "raw".to_string(),
+                                    Type::Data(
+                                        f64::from_le_bytes(left.try_into().unwrap())
+                                            .to_string()
+                                            .as_bytes()
+                                            .to_vec(),
+                                    ),
+                                )]),
+                            }
+                        }),
+                    ),
                 ]),
             }),
         ),
@@ -312,6 +338,34 @@ fn builtin_classes() -> Scope {
                                 ),
                             );
                             obj
+                        }),
+                    ),
+                    (
+                        "to-number".to_string(),
+                        Function::BuiltIn(|_, scope| {
+                            let left = scope
+                                .get("self")
+                                .unwrap()
+                                .get_object()
+                                .properties
+                                .get("raw")
+                                .unwrap()
+                                .get_data();
+                            let class = scope.get("number").unwrap();
+                            Object {
+                                class: class.to_owned().get_class(),
+                                properties: HashMap::from([(
+                                    "raw".to_string(),
+                                    Type::Data(
+                                        String::from_utf8(left.try_into().unwrap())
+                                            .unwrap()
+                                            .parse::<f64>()
+                                            .unwrap_or_default()
+                                            .to_le_bytes()
+                                            .to_vec(),
+                                    ),
+                                )]),
+                            }
                         }),
                     ),
                     (

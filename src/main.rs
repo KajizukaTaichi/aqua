@@ -6,15 +6,14 @@ fn main() {
 
     let code = r#"
 apple = class{
-    size;
-    set-size = function(number) { self = number };
-    get-size = function() { size };
-    __display__ = function() { "Ta-da! this is an apple" }
+    size; color;
+
+    get-size = method() { size };
+    __display__ = method() { color + " apple" }
 };
-a = apple{ size = (2 + 3) };
+
+a = apple{ size = (2 + 3); color = "red" };
 console writeln a;
-console writeln (a get-size);
-a = a set-size 4;
 console writeln (a get-size)
     "#;
 
@@ -450,7 +449,7 @@ fn parse_object(source: String, classes: &mut Scope) -> Type {
                     Function::UserDefined(
                         {
                             let mut temp = tokens[0].clone();
-                            temp = temp.replacen("function(", "", 1);
+                            temp = temp.replacen("method(", "", 1);
                             temp.remove(temp.rfind(")").unwrap());
                             tokenize_expr(temp)
                         },
@@ -585,7 +584,6 @@ impl Object {
         scope.insert("self".to_string(), Type::Object(self.clone()));
         scope.extend(self.properties.clone());
 
-        dbg!(&name);
         let method = self.class.methods.get(&name).unwrap();
         let result = method.call(args, scope);
 

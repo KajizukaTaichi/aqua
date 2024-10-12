@@ -208,11 +208,114 @@ fn main() {
         new
     };
 
-    let code = "1 - (2 * 3)";
-    dbg!(parse_expr(code.to_string(), scope.clone())
-        .get_expr()
-        .eval(scope.clone())
+    let code = "x = 1; y = x + 2; 1 + y";
+    dbg!(run_program(code.to_string(), &mut scope.clone())
+        .get_object()
         .display(scope));
+}
+
+fn run_program(source: String, scope: &mut Scope) -> Type {
+    let source = tokenize_program(source);
+    let mut result = None;
+
+    // Execute each line
+    for lines in source {
+        if lines.len() == 2 {
+            // Define variable
+            result = Some(parse_expr(lines[1].clone(), scope.clone()).eval(scope.clone()));
+            scope.insert(lines[0].trim().to_string(), result.clone().unwrap());
+        } else {
+            // Evaluate the expression
+            result = Some(parse_expr(lines[0].to_string(), scope.clone()).eval(scope.clone()));
+        }
+    }
+    result.unwrap()
+}
+
+fn tokenize_program(input: String) -> Vec<Vec<String>> {
+    let mut tokens: Vec<Vec<String>> = Vec::new();
+    let mut current_token = String::new();
+    let mut after_equal = String::new();
+    let mut is_equal = false;
+    let mut in_parentheses: usize = 0;
+    let mut in_quote = false;
+
+    for c in input.chars() {
+        match c {
+            '{' if !in_quote => {
+                if is_equal {
+                    after_equal.push(c);
+                } else {
+                    current_token.push(c);
+                }
+                in_parentheses += 1;
+            }
+            '}' if !in_quote => {
+                if is_equal {
+                    after_equal.push(c);
+                } else {
+                    current_token.push(c);
+                }
+                in_parentheses -= 1;
+            }
+            ';' if !in_quote => {
+                if in_parentheses != 0 {
+                    if is_equal {
+                        after_equal.push(c);
+                    } else {
+                        current_token.push(c);
+                    }
+                } else if !current_token.is_empty() {
+                    if is_equal {
+                        is_equal = false;
+                        tokens.push(vec![current_token.clone(), after_equal.clone()]);
+                        current_token.clear();
+                        after_equal.clear();
+                    } else {
+                        tokens.push(vec![current_token.clone()]);
+                        current_token.clear();
+                    }
+                }
+            }
+            '=' if !in_quote => {
+                if in_parentheses != 0 {
+                    if is_equal {
+                        after_equal.push(c);
+                    } else {
+                        current_token.push(c);
+                    }
+                } else {
+                    is_equal = true;
+                }
+            }
+            '"' => {
+                in_quote = !in_quote;
+                if is_equal {
+                    after_equal.push(c);
+                } else {
+                    current_token.push(c);
+                }
+            }
+            _ => {
+                if is_equal {
+                    after_equal.push(c);
+                } else {
+                    current_token.push(c);
+                }
+            }
+        }
+    }
+
+    if in_parentheses == 0 && !current_token.is_empty() {
+        if is_equal {
+            tokens.push(vec![current_token.clone(), after_equal]);
+            current_token.clear();
+        } else {
+            tokens.push(vec![current_token.clone()]);
+            current_token.clear();
+        }
+    }
+    tokens
 }
 
 fn parse_object(source: String, classes: Scope) -> Type {
@@ -239,7 +342,7 @@ fn parse_object(source: String, classes: Scope) -> Type {
             )]),
         })
     } else {
-        panic!()
+        Type::Variable(source)
     }
 }
 
@@ -249,7 +352,7 @@ fn parse_expr(source: String, classes: Scope) -> Type {
         parse_object(tokens[0].clone(), classes)
     } else {
         Type::Expr(Expr {
-            object: parse_object(tokens[0].clone(), classes.clone()).get_object(),
+            object: Box::new(parse_object(tokens[0].clone(), classes.clone())),
             methods: tokens[1].clone(),
             args: tokens
                 .get(2..)
@@ -397,12 +500,20 @@ impl Type {
             _ => panic!("らんらんるー"),
         }
     }
+
+    fn eval(&self, scope: Scope) -> Type {
+        match self {
+            Type::Expr(expr) => Type::Object(expr.eval(scope)),
+            Type::Variable(variable) => scope.get(variable).unwrap().to_owned(),
+            other => other.clone(),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
 enum Function {
     BuiltIn(fn(Args, Scope) -> Object),
-    UserDefined(Args, String),
+    UserDefined(String),
 }
 impl Function {
     fn call(&self, args: Args, properties: Scope) -> Object {
@@ -420,6 +531,8 @@ impl Function {
 
         if let Function::BuiltIn(func) = self {
             func(args, properties)
+        } else if let Function::UserDefined(code) = self {
+            run_program(code.to_string(), &mut properties.clone()).get_object()
         } else {
             todo!()
         }
@@ -428,7 +541,7 @@ impl Function {
 
 #[derive(Clone, Debug)]
 struct Expr {
-    object: Object,
+    object: Box<Type>,
     methods: String,
     args: Args,
 }
@@ -439,6 +552,8 @@ impl Expr {
             for i in self.args.clone() {
                 if let Type::Expr(expr) = i {
                     new.push(Type::Object(expr.eval(scope.clone())));
+                } else if let Type::Variable(v) = i {
+                    new.push(scope.get(&v).unwrap().to_owned());
                 } else {
                     new.push(i);
                 }
@@ -446,8 +561,10 @@ impl Expr {
             new
         };
 
-        self.object
-            .clone()
-            .call_method(self.methods.clone(), args, scope)
+        (*self.object).eval(scope.clone()).get_object().call_method(
+            self.methods.clone(),
+            args,
+            scope,
+        )
     }
 }

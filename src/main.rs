@@ -4,13 +4,20 @@ fn main() {
     println!("Aqua 0.1");
     let mut scope = builtin_classes();
 
-    let code = r#"apple = class{ size; get-size = {size}; __display__ = { "Ta-da! this is apple" } }; a = apple{ size = (2 + 3) }; console writeln a; a get-size"#;
-    println!(
-        "{}",
-        run_program(code.to_string(), &mut scope)
-            .get_object()
-            .display(scope)
-    );
+    let code = r#"
+        apple = class{
+            size;
+            get-size = {size};
+            __display__ = { "Ta-da! this is apple" }
+        };
+        a = apple{ size = (2 + 3) };
+        console writeln a;
+        console writeln (a get-size)
+    "#;
+
+    run_program(code.to_string(), &mut scope)
+        .get_object()
+        .display(scope);
 }
 
 fn builtin_classes() -> Scope {
@@ -288,20 +295,20 @@ fn builtin_classes() -> Scope {
 
 fn run_program(source: String, scope: &mut Scope) -> Type {
     let source = tokenize_program(source);
-    let mut result = None;
+    let mut result = parse_object("null".to_string(), scope.clone());
 
     // Execute each line
     for lines in source {
         if lines.len() == 2 {
             // Define variable
-            result = Some(parse_expr(lines[1].clone(), scope.clone()).eval(scope.clone()));
-            scope.insert(lines[0].trim().to_string(), result.clone().unwrap());
+            result = parse_expr(lines[1].clone(), scope.clone()).eval(scope.clone());
+            scope.insert(lines[0].trim().to_string(), result.clone());
         } else {
             // Evaluate the expression
-            result = Some(parse_expr(lines[0].to_string(), scope.clone()).eval(scope.clone()));
+            result = parse_expr(lines[0].to_string(), scope.clone()).eval(scope.clone());
         }
     }
-    result.unwrap()
+    result
 }
 
 fn tokenize_program(input: String) -> Vec<Vec<String>> {

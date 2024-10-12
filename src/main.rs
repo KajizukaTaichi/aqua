@@ -3,6 +3,7 @@ use rustyline::DefaultEditor;
 use std::{
     collections::{HashMap, HashSet},
     fs::read_to_string,
+    process::exit,
 };
 
 const VERSION: &str = "0.1.0";
@@ -44,8 +45,12 @@ fn main() {
             }
 
             if !code.is_empty() {
-                if let Type::Object(mut obj) = run_program(code, &mut scope) {
-                    println!("{}", obj.display(&mut scope));
+                if code.trim() == ":q" {
+                    exit(0);
+                } else {
+                    if let Type::Object(mut obj) = run_program(code, &mut scope) {
+                        println!("{}", obj.display(&mut scope));
+                    }
                 }
             }
         }

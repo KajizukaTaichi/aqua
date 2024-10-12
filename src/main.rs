@@ -7,11 +7,14 @@ fn main() {
     let code = r#"
 apple = class{
     size;
-    get-size = () {size};
+    set-size = (number) { number = number };
+    get-size = () { size };
     __display__ = () { "Ta-da! this is an apple" }
 };
 a = apple{ size = (2 + 3) };
 console writeln a;
+console writeln (a get-size);
+a set-size 10;
 console writeln (a get-size)
     "#;
 
@@ -653,18 +656,6 @@ enum Function {
 }
 impl Function {
     fn call(&self, args: Args, mut properties: Scope) -> Object {
-        let args = {
-            let mut new = vec![];
-            for i in args {
-                if let Type::Variable(v) = i {
-                    new.push(properties.get(&v).unwrap().to_owned());
-                } else {
-                    new.push(i);
-                }
-            }
-            new
-        };
-
         if let Function::BuiltIn(func) = self {
             func(args, properties)
         } else if let Function::UserDefined(params, code) = self {

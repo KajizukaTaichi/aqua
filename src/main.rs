@@ -208,7 +208,7 @@ fn main() {
         new
     };
 
-    let code = "1 + 1";
+    let code = "1 - (2 * 3)";
     dbg!(parse_expr(code.to_string(), scope.clone())
         .get_expr()
         .eval(scope.clone())

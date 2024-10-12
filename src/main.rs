@@ -341,6 +341,26 @@ fn parse_object(source: String, classes: Scope) -> Type {
                 Type::Data(source.as_bytes().to_vec()),
             )]),
         })
+    } else if source.contains("{") && source.ends_with("}") {
+        source.remove(source.rfind("}").unwrap());
+        let (class, body) = source.split_once("{").unwrap();
+        let class = classes.get(class).unwrap();
+        Type::Object(Object {
+            class: class.to_owned().get_class(),
+            properties: {
+                let mut result = HashMap::new();
+                let tokens = tokenize_program(body.to_string());
+                for token in tokens {
+                    if token.len() == 2 {
+                        result.insert(
+                            token[0].clone(),
+                            parse_expr(token[1].clone(), classes.clone()),
+                        );
+                    }
+                }
+                result
+            },
+        })
     } else {
         Type::Variable(source)
     }
@@ -372,11 +392,11 @@ fn tokenize_expr(input: String) -> Vec<String> {
 
     for c in input.chars() {
         match c {
-            '(' if !in_quote => {
+            '(' | '{' if !in_quote => {
                 in_parentheses += 1;
                 current_token.push(c);
             }
-            ')' if !in_quote => {
+            ')' | '}' if !in_quote => {
                 if in_parentheses != 0 {
                     current_token.push(c);
                     in_parentheses -= 1;
@@ -483,13 +503,6 @@ impl Type {
     fn get_data(&self) -> Vec<u8> {
         match self {
             Type::Data(data) => data.to_owned(),
-            _ => panic!("らんらんるー"),
-        }
-    }
-
-    fn get_expr(&self) -> Expr {
-        match self {
-            Type::Expr(expr) => expr.to_owned(),
             _ => panic!("らんらんるー"),
         }
     }

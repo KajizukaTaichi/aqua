@@ -208,7 +208,7 @@ fn main() {
         new
     };
 
-    let code = "apple = class{size;}";
+    let code = r#"apple = class{ size; get-size = {size}; __display__ = { "Ta-da! this is apple" } }; a = apple{ size = (2 + 3) }; a"#;
     dbg!(run_program(code.to_string(), &mut scope.clone())
         .get_object()
         .display(scope));
@@ -220,6 +220,7 @@ fn run_program(source: String, scope: &mut Scope) -> Type {
 
     // Execute each line
     for lines in source {
+        dbg!(&scope);
         if lines.len() == 2 {
             // Define variable
             result = Some(parse_expr(lines[1].clone(), scope.clone()).eval(scope.clone()));
@@ -228,6 +229,7 @@ fn run_program(source: String, scope: &mut Scope) -> Type {
             // Evaluate the expression
             result = Some(parse_expr(lines[0].to_string(), scope.clone()).eval(scope.clone()));
         }
+        dbg!(&scope);
     }
     result.unwrap()
 }
@@ -341,29 +343,9 @@ fn parse_object(source: String, classes: Scope) -> Type {
                 Type::Data(source.as_bytes().to_vec()),
             )]),
         })
-    } else if source.contains("{") && source.ends_with("}") {
-        source.remove(source.rfind("}").unwrap());
-        let (class, body) = source.split_once("{").unwrap();
-        let class = classes.get(class).unwrap();
-        Type::Object(Object {
-            class: class.to_owned().get_class(),
-            properties: {
-                let mut result = HashMap::new();
-                let tokens = tokenize_program(body.to_string());
-                for token in tokens {
-                    if token.len() == 2 {
-                        result.insert(
-                            token[0].trim().to_string().clone(),
-                            parse_expr(token[1].trim().to_string().clone(), classes.clone()),
-                        );
-                    }
-                }
-                result
-            },
-        })
     } else if source.contains("class{") && source.ends_with("}") {
         source.remove(source.rfind("}").unwrap());
-        source = source.replacen("class{", "", 0);
+        source = source.replacen("class{", "", 1);
 
         let tokens = tokenize_program(source);
         let mut properties = HashSet::new();
@@ -376,13 +358,36 @@ fn parse_object(source: String, classes: Scope) -> Type {
                     Function::UserDefined(token[1].clone()),
                 );
             } else {
-                properties.insert(token[1].trim().to_string().clone());
+                properties.insert(token[0].trim().to_string().clone());
             }
         }
+
+        dbg!(&properties, &methods);
 
         Type::Class(Class {
             properties,
             methods,
+        })
+    } else if source.contains("{") && source.ends_with("}") {
+        source.remove(source.rfind("}").unwrap());
+        let (class, body) = source.split_once("{").unwrap();
+        let class = classes.get(class.trim()).unwrap();
+        Type::Object(Object {
+            class: class.to_owned().get_class(),
+            properties: {
+                let mut result = HashMap::new();
+                let tokens = tokenize_program(body.to_string());
+                for token in tokens {
+                    if token.len() == 2 {
+                        result.insert(
+                            token[0].trim().to_string().clone(),
+                            parse_expr(token[1].trim().to_string().clone(), classes.clone())
+                                .eval(classes.clone()),
+                        );
+                    }
+                }
+                result
+            },
         })
     } else {
         Type::Variable(source)
@@ -568,6 +573,8 @@ impl Function {
         if let Function::BuiltIn(func) = self {
             func(args, properties)
         } else if let Function::UserDefined(code) = self {
+            let mut code = code.replacen("{", "", 1);
+            code.remove(code.rfind("}").unwrap());
             run_program(code.to_string(), &mut properties.clone()).get_object()
         } else {
             todo!()

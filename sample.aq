@@ -5,10 +5,6 @@ player = class{
     get-hp = method() { hp };
     get-level = method() { level };
 
-    level-up = method(plus) {
-        self level = level + 1
-    };
-
     __display__ = method() {
         hp = "HP" + (hp to-string);
         level = "Level" + (level to-string);
@@ -17,7 +13,10 @@ player = class{
 };
 
 
-you = player{ name = "Mario"; hp = 80; level = 1 };
-console writeln you;
-you = you level-up;
-console writeln you
+mario = player{ name = "Mario"; hp = 80; level = 3 };
+luigi = player{ name = "Luigi"; hp = 50; level = 1 };
+
+console writeln mario; console writeln luigi;
+
+console write "HP different: ";
+console writeln ((mario get-hp) - (luigi get-hp))

@@ -1,25 +1,55 @@
-use std::collections::{HashMap, HashSet};
-
-fn main() {
-    println!("Aqua 0.1");
-    let mut scope = builtin_classes();
-
-    let code = r#"
-apple = class{
-    size; color;
-
-    get-size = method() { size };
-    __display__ = method() { color + " apple" }
+use clap::Parser;
+use rustyline::DefaultEditor;
+use std::{
+    collections::{HashMap, HashSet},
+    fs::read_to_string,
 };
 
-a = apple{ size = (2 + 3); color = "red" };
-console writeln a;
-console writeln (a get-size)
-    "#;
+const VERSION: &str = "0.1.0";
 
-    run_program(code.to_string(), &mut scope)
-        .get_object()
-        .display(&mut scope);
+#[derive(Parser, Debug)]
+#[command(
+    name = "Aqua",
+    version = VERSION,
+    author = "梶塚太智 <kajizukataichi@outlook.jp>",
+    about = "A class based object oriented programming language",
+)]
+struct Cli {
+    /// Run the script file
+    #[arg(index = 1)]
+    file: Option<String>,
+}
+
+fn main() {
+    let mut scope = builtin_classes();
+    let cli = Cli::parse();
+
+    if let Some(path) = cli.file {
+        let code = read_to_string(path).unwrap();
+        run_program(code.to_string(), &mut scope);
+    } else {
+        println!("Aqua {VERSION}");
+        let mut rl = DefaultEditor::new().unwrap();
+
+        // REPL
+        loop {
+            let mut code = String::new();
+            loop {
+                let enter = rl.readline("> ").unwrap_or_default().trim().to_string();
+                if enter.is_empty() {
+                    break;
+                }
+                code += &format!("{enter} ");
+                rl.add_history_entry(&enter).unwrap_or_default();
+            }
+
+            if !code.is_empty() {
+                if let Type::Object(mut obj) = run_program(code, &mut scope) {
+                    println!("{}", obj.display(&mut scope));
+                }
+            }
+        }
+    }
 }
 
 fn builtin_classes() -> Scope {
@@ -281,7 +311,7 @@ fn builtin_classes() -> Scope {
                     ),
                     (
                         "__display__".to_string(),
-                        Function::BuiltIn(|_, scope| scope.get("string").unwrap().get_object()),
+                        Function::BuiltIn(|_, scope| scope.get("self").unwrap().get_object()),
                     ),
                 ]),
             }),

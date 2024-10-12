@@ -1,8 +1,8 @@
 apple = class{
-    size; color;
+    weight; color;
 
-    get-size = method() {
-        size
+    get-weight = method() {
+        weight
     };
 
     __display__ = method() {
@@ -11,10 +11,6 @@ apple = class{
 };
 
 
-ringo = apple{ size = 5; color = "red" };
+akita-gold = apple{ size = 300; color = "gold" };
 console writeln ringo;
 console writeln (ringo get-size);
-
-nashi = apple{ size = ((ringo get-size) - 2); color = "green" };
-console writeln nashi;
-console writeln (nashi get-size)

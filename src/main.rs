@@ -319,27 +319,8 @@ fn builtin_classes() -> Scope {
                     (
                         "to-string".to_string(),
                         Function::BuiltIn(|_, scope| {
-                            let left = scope
-                                .get("self")
-                                .unwrap()
-                                .get_object()
-                                .properties
-                                .get("raw")
-                                .unwrap()
-                                .get_data();
-                            let class = scope.get("string").unwrap();
-                            Object {
-                                class: class.to_owned().get_class(),
-                                properties: HashMap::from([(
-                                    "raw".to_string(),
-                                    Type::Data(
-                                        f64::from_le_bytes(left.try_into().unwrap())
-                                            .to_string()
-                                            .as_bytes()
-                                            .to_vec(),
-                                    ),
-                                )]),
-                            }
+                            let mut value = scope.get("self").unwrap().get_object();
+                            value.call_method("__display__".to_string(), vec![], scope)
                         }),
                     ),
                 ]),

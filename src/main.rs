@@ -125,6 +125,28 @@ fn builtin_classes() -> Scope {
             }),
         ),
         (
+            "system".to_string(),
+            (Class {
+                properties: HashSet::new(),
+                methods: HashMap::from([
+                    ("exit".to_string(), Function::BuiltIn(|_, _| exit(0))),
+                    (
+                        "__display__".to_string(),
+                        Function::BuiltIn(|_, scope| {
+                            let class = scope.get("string").unwrap();
+                            Object {
+                                class: class.to_owned().get_class(),
+                                properties: HashMap::from([(
+                                    "raw".to_string(),
+                                    Type::Data("system".to_string().as_bytes().to_vec()),
+                                )]),
+                            }
+                        }),
+                    ),
+                ]),
+            }),
+        ),
+        (
             "null".to_string(),
             (Class {
                 properties: HashSet::new(),
@@ -396,8 +418,19 @@ fn builtin_classes() -> Scope {
     ]);
 
     let mut new = HashMap::new();
-    for (k, v) in classes {
+    for (k, v) in classes.clone() {
         new.insert(k, Type::Class(v));
+    }
+
+    for i in ["console", "system"] {
+        let class = classes.get(i).unwrap();
+        new.insert(
+            i.to_string(),
+            Type::Object(Object {
+                class: class.to_owned(),
+                properties: HashMap::new(),
+            }),
+        );
     }
     new
 }
@@ -529,12 +562,6 @@ fn parse_object(source: String, classes: &mut Scope) -> Type {
         })
     } else if source == "null" {
         let class = classes.get("null").unwrap();
-        Type::Object(Object {
-            class: class.to_owned().get_class(),
-            properties: HashMap::new(),
-        })
-    } else if source == "console" {
-        let class = classes.get("console").unwrap();
         Type::Object(Object {
             class: class.to_owned().get_class(),
             properties: HashMap::new(),

@@ -740,6 +740,7 @@ impl Object {
                 .insert(i.to_string(), scope.get(i).unwrap().to_owned());
         }
 
+        // dbg!(&scope);
         result
     }
 

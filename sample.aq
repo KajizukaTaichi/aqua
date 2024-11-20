@@ -1,14 +1,14 @@
 player = class{
     name; hp; level;
 
-    get-name = method() { name };
-    get-hp = method() { hp };
-    get-level = method() { level };
+    get-name = method() { self.name };
+    get-hp = method() { self.hp };
+    get-level = method() { self.level };
 
     __display__ = method() {
-        hp = "HP" + (hp to-string);
-        level = "Level" + (level to-string);
-        name + (" " + (hp + (" " + level)))
+        hp = "HP" + (self.hp to-string);
+        level = "Level" + (self.level to-string);
+        self.name + (" " + (hp + (" " + level)))
     }
 };
 

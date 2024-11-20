@@ -702,15 +702,19 @@ struct Object {
 impl Object {
     fn call_method(&mut self, name: String, args: Args, scope: &mut Scope) -> Object {
         scope.insert("self".to_string(), Type::Object(self.clone()));
-        scope.extend(self.properties.clone());
+        for (k, v) in &self.properties {
+            scope.insert(format!("self.{k}"), v.clone());
+        }
 
         let method = self.class.methods.get(&name).unwrap();
         let result = method.call(args, scope);
 
         *self = scope.get("self").unwrap().get_object();
         for i in &self.class.properties {
-            self.properties
-                .insert(i.to_string(), scope.get(i).unwrap().to_owned());
+            self.properties.insert(
+                i.to_string(),
+                scope.get(&format!("self.{i}")).unwrap().to_owned(),
+            );
         }
 
         // dbg!(&scope);

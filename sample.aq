@@ -16,8 +16,8 @@ player = class{
 alice = player{ name = "Alice"; hp = 80; level = 3 };
 bob = player{ name = "Bob"; hp = 50; level = 1 };
 
-console writeln alice; console writeln bob;
+(console writeln alice) writeln bob;
 
 console write "HP different: ";
-value = ((alice get-hp) - (bob get-hp));
+value = (alice get-hp) - (bob get-hp);
 console writeln value

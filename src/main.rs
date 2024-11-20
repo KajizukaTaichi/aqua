@@ -70,11 +70,7 @@ fn builtin_classes() -> Scope {
                             let text = args[0].get_object().display(scope);
                             println!("{text}");
 
-                            let class = scope.get("null").unwrap();
-                            Object {
-                                class: class.to_owned().get_class(),
-                                properties: HashMap::new(),
-                            }
+                            scope.get("console").unwrap().get_object()
                         }),
                     ),
                     (
@@ -83,11 +79,7 @@ fn builtin_classes() -> Scope {
                             let text = args[0].get_object().display(scope);
                             print!("{text}");
 
-                            let class = scope.get("null").unwrap();
-                            Object {
-                                class: class.to_owned().get_class(),
-                                properties: HashMap::new(),
-                            }
+                            scope.get("console").unwrap().get_object()
                         }),
                     ),
                     (
